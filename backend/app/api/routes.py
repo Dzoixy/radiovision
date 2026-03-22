@@ -1,82 +1,152 @@
-# backend/app/api/routes.py
-
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form
 import uuid
 import os
-from pathlib import Path
 import cv2
+import numpy as np
 
-from app.services import preprocess, inference, postprocess, render
-from app.schemas.result import ResultResponse
+from app.services import preprocess, inference, gradcam, render
+from app.models.lung_model import model
 
+# =========================
+# INIT ROUTER
+# =========================
 router = APIRouter()
 
-# safer path
-BASE_DIR = Path("backend/data")
-UPLOAD_DIR = BASE_DIR / "uploads"
-OUTPUT_DIR = BASE_DIR / "outputs"
+# =========================
+# PATH CONFIG (ต้องตรง main.py)
+# =========================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
+OUTPUT_DIR = os.path.join(DATA_DIR, "outputs")
+
+# create dirs
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+print("📁 UPLOAD_DIR =", UPLOAD_DIR)
+print("📁 OUTPUT_DIR =", OUTPUT_DIR)
 
 
-@router.post("/analyze", response_model=ResultResponse)
+# =========================
+# ANALYZE API
+# =========================
+@router.post("/analyze")
 async def analyze(
     file: UploadFile = File(...),
-    purpose: str = Form(...),
-    preset: str = Form(...)
+    preset: str = Form("standard")
 ):
-    # 🔹 validate file type
-    if file.content_type not in ["image/jpeg", "image/png"]:
-        raise HTTPException(status_code=400, detail="Invalid file type")
-
-    # 🔹 validate options
-    if purpose not in ["screening", "diagnostic"]:
-        raise HTTPException(status_code=400, detail="Invalid purpose")
-
-    if preset not in ["standard", "high"]:
-        raise HTTPException(status_code=400, detail="Invalid preset")
-
     try:
-        # 1. read file
+        # =========================
+        # READ FILE
+        # =========================
         image_bytes = await file.read()
 
-        # 2. generate id
         study_id = str(uuid.uuid4())
 
-        input_path = UPLOAD_DIR / f"{study_id}.jpg"
-        output_path = OUTPUT_DIR / f"{study_id}.jpg"
+        input_path = os.path.join(UPLOAD_DIR, f"{study_id}.jpg")
+        output_path = os.path.join(OUTPUT_DIR, f"{study_id}.jpg")
+        original_path = os.path.join(OUTPUT_DIR, f"{study_id}_orig.jpg")
 
-        # 3. save original
+        print("\n====== NEW REQUEST ======")
+        print("STUDY ID:", study_id)
+        print("SAVE INPUT:", input_path)
+
+        # save input
         with open(input_path, "wb") as f:
             f.write(image_bytes)
 
-        # 4. preprocess
-        img, original = preprocess.run(image_bytes, preset)
+        # =========================
+        # PREPROCESS
+        # =========================
+        img_tensor, original = preprocess.run(image_bytes, preset)
 
-        # 5. inference
-        prob = inference.run(img)
+        print("PREPROCESS DONE")
+        print("ORIGINAL TYPE:", type(original))
+        print("ORIGINAL SHAPE:", None if original is None else original.shape)
 
-        # 6. postprocess
-        result = postprocess.run(prob, purpose)
+        # =========================
+        # INFERENCE
+        # =========================
+        pred, confidence = inference.run(model, img_tensor)
 
-        # 7. render
-        heatmap = render.generate_heatmap()
+        print("INFERENCE DONE:", pred, confidence)
+
+        # =========================
+        # GRADCAM
+        # =========================
+        cam = gradcam.generate(model, img_tensor)
+
+        print("CAM TYPE:", type(cam))
+        print("CAM SHAPE:", None if cam is None else cam.shape)
+
+        # =========================
+        # HEATMAP
+        # =========================
+        heatmap = render.generate_heatmap(cam)
+
+        print("HEATMAP SHAPE:", None if heatmap is None else heatmap.shape)
+
+        # =========================
+        # OVERLAY
+        # =========================
         result_img = render.overlay(original, heatmap)
 
-        # 8. save result image
-        cv2.imwrite(str(output_path), result_img)
+        print("RESULT TYPE:", type(result_img))
+        print("RESULT SHAPE:", None if result_img is None else result_img.shape)
 
-        # 9. return (ใช้ schema)
-        return ResultResponse(
-            id=study_id,
-            finding=result["label"],
-            confidence=result["confidence"],
-            purpose=purpose,
-            preset=preset,
-            image_url=f"/outputs/{study_id}.jpg",
-            suggestion="Follow-up recommended"
-        )
+        # =========================
+        # FIX IMAGE FORMAT (สำคัญมาก)
+        # =========================
+        def fix_image(img):
+            if img is None:
+                return None
+
+            if img.dtype != np.uint8:
+                if img.max() <= 1.0:
+                    img = (img * 255).astype(np.uint8)
+                else:
+                    img = img.astype(np.uint8)
+
+            return img
+
+        result_img = fix_image(result_img)
+        original = fix_image(original)
+
+        # =========================
+        # SAVE IMAGE
+        # =========================
+        ok1 = cv2.imwrite(output_path, result_img)
+        ok2 = cv2.imwrite(original_path, original)
+
+        print("SAVE RESULT:", ok1, ok2)
+        print("OUTPUT PATH:", output_path)
+
+        # =========================
+        # CHECK SAVE FAIL
+        # =========================
+        if not ok1 or not ok2:
+            return {
+                "error": "Failed to save images",
+                "debug": {
+                    "result_img_none": result_img is None,
+                    "original_none": original is None
+                }
+            }
+
+        # =========================
+        # RESPONSE
+        # =========================
+        return {
+            "finding": "Pneumonia" if pred == 1 else "Normal",
+            "confidence": float(confidence),
+            "heatmap_url": f"/outputs/{study_id}.jpg",
+            "original_url": f"/outputs/{study_id}_orig.jpg"
+        }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print("🔥 ERROR:", str(e))
+        return {
+            "error": str(e)
+        }

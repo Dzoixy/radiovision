@@ -1,11 +1,13 @@
-from app.models.lung_model import model
 import torch
+import numpy as np
 
-def run(img):
-    tensor = torch.tensor(img).unsqueeze(0)
+def run(model, img_tensor):
+    model.eval()
 
     with torch.no_grad():
-        out = model(tensor)
-        prob = torch.softmax(out, dim=1)
+        outputs = model(img_tensor)
+        probs = torch.softmax(outputs, dim=1)
 
-    return prob.numpy()[0]
+    confidence, pred = torch.max(probs, dim=1)
+
+    return pred.item(), confidence.item()

@@ -1,12 +1,20 @@
-import torch
 from pathlib import Path
+import torch
+import torchvision.models as models
 
-BASE_DIR = Path(__file__).resolve().parents[3]
+MODEL_PATH = Path(__file__).resolve().parent.parent.parent.parent / "ai/lung_model.pth"
 
-MODEL_PATH = BASE_DIR / "ai" / "lung_model.pt"
+model = models.resnet18()
 
-print("MODEL PATH:", MODEL_PATH)
-print("EXISTS:", MODEL_PATH.exists())
+# 🔥 grayscale
+model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
-model = torch.jit.load(str(MODEL_PATH), map_location="cpu")
+# 🔥 แก้ตรงนี้ (สำคัญที่สุด)
+model.fc = torch.nn.Linear(512, 2)
+
+# โหลด weights
+model.load_state_dict(torch.load(MODEL_PATH, map_location="cpu"))
+
 model.eval()
+print("loading model...")
+print("Model loaded successfully")

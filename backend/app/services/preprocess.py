@@ -1,25 +1,28 @@
-# backend/app/services/preprocess.py
-
-import cv2
 import numpy as np
+import cv2
+import torch
 
+def run(image_bytes, preset="standard"):
 
-def run(image_bytes, preset):
-    np_arr = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_GRAYSCALE)
+    # 🔥 แปลง bytes → numpy image
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+
+    if img is None:
+        raise ValueError("Image decode failed")
 
     original = img.copy()
 
-    if preset == "standard":
-        size = 224
-    else:
-        size = 512
-        img = cv2.equalizeHist(img)
-        img = cv2.GaussianBlur(img, (3, 3), 0)
+    # 🔥 resize
+    img = cv2.resize(img, (224, 224))
 
-    img = cv2.resize(img, (size, size))
+    # 🔥 normalize
     img = img / 255.0
 
-    img = np.expand_dims(img, axis=0)
+    # 🔥 numpy → tensor
+    img = torch.tensor(img, dtype=torch.float32)
 
-    return img.astype("float32"), original
+    # 🔥 shape: (1, 1, 224, 224)
+    img = img.unsqueeze(0).unsqueeze(0)
+
+    return img, original
