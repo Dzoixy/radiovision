@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+
 def run(model, img_tensor):
     model.eval()
 
@@ -11,3 +12,4 @@ def run(model, img_tensor):
     confidence, pred = torch.max(probs, dim=1)
 
     return pred.item(), confidence.item()
+

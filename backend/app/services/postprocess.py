@@ -1,10 +1,7 @@
-# backend/app/services/postprocess.py
-
 CLASS_NAMES = ["Normal", "Pneumonia"]
 
-
 def run(prob, purpose):
-
+    
     if purpose == "screening":
         threshold = 0.5
     else:
@@ -12,7 +9,6 @@ def run(prob, purpose):
 
     idx = prob.argmax()
     confidence = float(prob[idx])
-
     label = CLASS_NAMES[idx]
 
     if confidence < threshold:

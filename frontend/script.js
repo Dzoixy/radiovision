@@ -1,60 +1,56 @@
-console.log("JS LOADED ✅");
-
+console.log("JS LOADED");
 let selectedFile = null;
 
 const dropZone = document.getElementById("dropZone");
 const fileInput = document.getElementById("fileInput");
-
 const resultText = document.getElementById("result-text");
 const resultImage = document.getElementById("resultImage");
 const outputText = document.getElementById("outputText");
+const reportBox = document.getElementById("reportBox");
 
-let originalImage = null;
 let heatmapImage = null;
 
-// ======================
-// CLICK
-// ======================
-dropZone.onclick = () => fileInput.click();
+//click
+if (dropZone) {
+    dropZone.onclick = () => fileInput.click();
+}
 
-// ======================
-// FILE SELECT
-// ======================
-fileInput.onchange = (e) => {
-    selectedFile = e.target.files[0];
-    console.log("FILE SELECTED:", selectedFile);
-    previewFile(selectedFile);
-};
-
-// ======================
-// DRAG & DROP
-// ======================
-dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = "#c68e3d";
-});
-
-dropZone.addEventListener("dragleave", () => {
-    dropZone.style.borderColor = "#262626";
-});
-
-dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-
-    const files = e.dataTransfer.files;
-
-    if (files.length > 0) {
-        selectedFile = files[0];
-        console.log("FILE DROPPED:", selectedFile);
+//file input
+if (fileInput) {
+    fileInput.onchange = (e) => {
+        selectedFile = e.target.files[0];
+        console.log("FILE SELECTED:", selectedFile);
         previewFile(selectedFile);
-    }
+    };
+}
 
-    dropZone.style.borderColor = "#262626";
-});
+//dragdrop
+if (dropZone) {
+    dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "#c68e3d";
+    });
 
-// ======================
-// PREVIEW
-// ======================
+    dropZone.addEventListener("dragleave", () => {
+        dropZone.style.borderColor = "#262626";
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+
+        const files = e.dataTransfer.files;
+
+        if (files.length > 0) {
+            selectedFile = files[0];
+            console.log("FILE DROPPED:", selectedFile);
+            previewFile(selectedFile);
+        }
+
+        dropZone.style.borderColor = "#262626";
+    });
+}
+
+//preview
 function previewFile(file) {
     if (!file) return;
 
@@ -83,11 +79,8 @@ function previewFile(file) {
     reader.readAsDataURL(file);
 }
 
-// ======================
-// ANALYZE
-// ======================
+//analyze
 async function analyze() {
-
     console.log("CLICK ANALYZE 🚀");
 
     if (!selectedFile) {
@@ -102,14 +95,12 @@ async function analyze() {
     formData.append("preset", "standard");
 
     try {
-        console.log("FETCHING...");
-
         const res = await fetch("http://127.0.0.1:9000/analyze", {
             method: "POST",
             body: formData
         });
 
-        console.log("RESPONSE STATUS:", res.status);
+        console.log("STATUS:", res.status);
 
         if (!res.ok) {
             const err = await res.text();
@@ -122,66 +113,76 @@ async function analyze() {
 
         hideLoading();
 
-        // ======================
-        // RESULT TEXT
-        // ======================
-        resultText.innerText = `${data.finding} (${(data.confidence * 100).toFixed(2)}%)`;
+        //result text
+        if (resultText) {
+            resultText.innerText = `${data.finding} (${(data.confidence * 100).toFixed(2)}%)`;
+        }
 
-        // ======================
-        // IMAGE URL
-        // ======================
-        originalImage = "http://127.0.0.1:9000" + data.original_url;
+        //report
+        if (reportBox) {
+            reportBox.innerText = data.report || "No report";
+        }
+
+        //heatmap
         heatmapImage = "http://127.0.0.1:9000" + data.heatmap_url;
 
-        console.log("HEATMAP URL:", heatmapImage);
+        console.log("HEATMAP:", heatmapImage);
 
-        // ======================
-        // SHOW IMAGE (กัน cache + error)
-        // ======================
-        resultImage.onload = () => {
-            console.log("IMAGE LOADED ✅");
-        };
+        if (resultImage) {
+            resultImage.src = heatmapImage + "?t=" + Date.now();
+            resultImage.style.display = "block";
+        }
 
-        resultImage.onerror = () => {
-            console.error("IMAGE LOAD FAIL ❌");
-            console.log("FAILED URL:", resultImage.src);
-        };
-
-        resultImage.src = heatmapImage + "?t=" + new Date().getTime();
-        resultImage.style.display = "block";
-
-        // ซ่อน text
-        if (outputText) outputText.style.display = "none";
+        //hide output text
+        if (outputText) {
+            outputText.style.display = "none";
+        }
 
     } catch (err) {
         hideLoading();
-        resultText.innerText = "Error";
-        console.error("FULL ERROR:", err);
+        console.error("ERROR:", err);
+
+        if (resultText) resultText.innerText = "Error";
+        if (reportBox) reportBox.innerText = "Failed to analyze";
     }
 }
 
-// ======================
-// LOADING
-// ======================
+// loading
 function showLoading() {
-    document.getElementById("loadingOverlay").style.display = "flex";
+    const el = document.getElementById("loadingOverlay");
+    if (el) el.style.display = "flex";
 }
 
 function hideLoading() {
-    document.getElementById("loadingOverlay").style.display = "none";
+    const el = document.getElementById("loadingOverlay");
+    if (el) el.style.display = "none";
+}
+function openModal(type) {
+    const modal = document.getElementById("infoModal");
+    const title = document.getElementById("modalTitle");
+    const content = document.getElementById("modalContent");
+
+    if (type === "how") {
+        title.innerText = "หลักการทำงาน";
+        content.innerText =
+            "ระบบนี้ใช้ Deep Learning วิเคราะห์ภาพ X-ray โดยโมเดลจะตรวจจับความผิดปกติของปอด และใช้ Grad-CAM เพื่อแสดงตำแหน่งที่มีความเสี่ยง";
+    }
+
+    if (type === "guide") {
+        title.innerText = "คู่มือการใช้งาน";
+        content.innerText =
+            "1. อัปโหลดภาพ X-ray\n2. กดปุ่มวิเคราะห์\n3. ระบบจะแสดงผลพร้อม Heatmap และรายงาน";
+    }
+
+    if (type === "about") {
+        title.innerText = "ผู้จัดทำ";
+        content.innerText =
+            "พัฒนาโดย GenZBinary\nสาขาวิศวกรรมชีวการแพทย์\nโครงงาน AI วิเคราะห์ภาพทางการแพทย์";
+    }
+
+    modal.style.display = "flex";
 }
 
-// ======================
-// HOVER SWITCH
-// ======================
-resultImage.onmouseenter = () => {
-    if (heatmapImage) {
-        resultImage.src = heatmapImage + "?t=" + new Date().getTime();
-    }
-};
-
-resultImage.onmouseleave = () => {
-    if (originalImage) {
-        resultImage.src = originalImage + "?t=" + new Date().getTime();
-    }
-};
+function closeModal() {
+    document.getElementById("infoModal").style.display = "none";
+}

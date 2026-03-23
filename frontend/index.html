@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radiovision AI</title>
+    <title>GenZBinary</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
 
@@ -13,7 +13,7 @@
             --panel-bg: #111113;
             --border-color: #262626;
             --text-main: #ffffff;
-            --text-sub: #888888;
+            --text-sub: #ffffff;
             --btn-white: #ffffff; 
             --gold: #c68e3d;
         }
@@ -108,15 +108,17 @@
         .button-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 20px;
         }
 
         .action-btn {
             background: white;
             border: none;
+            width: 100%;
             padding: 14px;
             border-radius: 10px;
             font-weight: 700;
+            margin: 10px 0;
             cursor: pointer;
         }
 
@@ -124,7 +126,10 @@
             background: #1a1a1c;
             color: white;
             padding: 12px;
+            width: 100%;
             border-radius: 10px;
+            margin: 10px 0;
+            text-align: center;
             border: 1px solid #333;
         }
 
@@ -158,6 +163,47 @@
             0% { top: -40%; }
             100% { top: 100%; }
         }
+
+        .section {
+            background: #111113;
+            border: 1px solid #262626;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        #result-text {
+            color: #a2fa5f;
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        #severity-text {
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        #reportBox {
+        font-size: 15px;
+        color: #a2fa5f;
+        line-height: 1.5;
+        text-align: center;
+        }
+
+        .sidebar {
+        width: 200px;
+        display: flex;
+        flex-direction: column;
+        }
     </style>
 </head>
 
@@ -165,14 +211,14 @@
 
 <header>
     <div>
-        <div class="logo-text">Radiovision AI</div>
-        <div class="sub-logo">ADVANCED X-RAY ANALYSIS SYSTEM</div>
+        <div class="logo-text">GenZBinary</div>
+        <div class="sub-logo">ระบบช่วยวิเคราะห์ X-ray ด้วย Machine Learning</div>
     </div>
 
     <div class="nav-links">
-        <span>หลักการทำงาน</span>
-        <span>คู่มือการใช้งาน</span>
-        <span>ผู้จัดทำ</span>
+        <span onclick="openModal('how')">หลักการทำงาน</span>
+        <span onclick="openModal('guide')">คู่มือการใช้งาน</span>
+        <span onclick="openModal('about')">ผู้จัดทำ</span>
     </div>
 </header>
 
@@ -213,31 +259,38 @@
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
-        <div class="button-group">
 
-            <select class="select-box">
-                <option>Standard Mode</option>
-                <option>Deep Scan</option>
-            </select>
+    <!-- CONTROL -->
+    <div class="section">
+        <select class="select-box">
+            <option>Standard Mode</option>
+            <option>Deep Scan</option>
+        </select>
 
-            <select class="select-box">
-                <option>Diagnostic</option>
-                <option>Educational</option>
-            </select>
+        <select class="select-box">
+            <option>Diagnostic</option>
+            <option>Educational</option>
+        </select>
 
-            <button class="action-btn" onclick="analyze()">
-                เริ่มวิเคราะห์ภาพ
-            </button>
+        <button class="action-btn" onclick="analyze()">
+            เริ่มวิเคราะห์ภาพ
+        </button>
+    </div>
 
-        </div>
-    </aside>
+    <!-- RESULT -->
+    <div class="section">
+        <h3>RESULT</h3>
+        <div id="result-text"></div>
+        <div id="severity-text"></div>
+    </div>
 
-</div>
+    <!-- REPORT -->
+    <div class="section">
+        <h3>REPORT</h3>
+        <div id="reportBox"></div>
+    </div>
 
-<!-- RESULT -->
-<div class="result-bar">
-    <div id="result-text"></div>
-</div>
+</aside>
 
 <!-- LOADING -->
 <div id="loadingOverlay" style="
@@ -258,5 +311,37 @@
 
 <script src="script.js"></script>
 
+<div id="infoModal" style="
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.8);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:999;
+">
+    <div style="
+        background:#111113;
+        padding:30px;
+        border-radius:12px;
+        width:400px;
+        max-height:80%;
+        overflow:auto;
+        text-align:center;
+    ">
+        <h2 id="modalTitle"></h2>
+        <p id="modalContent" style="margin-top:15px; color:#aaa;"></p>
+
+        <button onclick="closeModal()" style="
+            margin-top:20px;
+            padding:10px 20px;
+            border:none;
+            border-radius:8px;
+            background:white;
+            cursor:pointer;
+        ">ปิด</button>
+    </div>
+</div>
 </body>
 </html>

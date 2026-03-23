@@ -1,19 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
 from app.api.routes import router
 
 import os
 
-# =========================
-# INIT APP
-# =========================
 app = FastAPI()
-
-# =========================
-# CORS (frontend เรียกได้)
-# =========================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,48 +14,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =========================
-# PATH CONFIG (สำคัญมาก)
-# =========================
 
-# path ของไฟล์นี้ (app/)
+#path config
+
+#path ของไฟล์นี้
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# path outputs จริง
+#path outputs จริง
 OUTPUT_PATH = os.path.abspath(
     os.path.join(BASE_DIR, "data", "outputs")
 )
 
-# debug
+#debug
 print("📁 BASE_DIR =", BASE_DIR)
 print("📁 OUTPUT_PATH =", OUTPUT_PATH)
 
-# สร้างโฟลเดอร์ถ้ายังไม่มี
+
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
-# ตรวจสอบ path
+#path
 if not os.path.exists(OUTPUT_PATH):
-    print("❌ OUTPUT PATH NOT FOUND")
+    print("OUTPUT PATH NOT Oka")
 else:
-    print("✅ OUTPUT PATH OK")
+    print("OUTPUT PATH OK")
 
-# =========================
-# STATIC FILE (serve รูป)
-# =========================
+#static files
 app.mount(
     "/outputs",
     StaticFiles(directory=OUTPUT_PATH),
     name="outputs"
 )
 
-# =========================
-# ROUTES
-# =========================
+#routes
 app.include_router(router)
 
-# =========================
-# ROOT TEST
-# =========================
 @app.get("/")
 def root():
     return {
