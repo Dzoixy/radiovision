@@ -165,19 +165,19 @@ function openModal(type) {
     if (type === "how") {
         title.innerText = "หลักการทำงาน";
         content.innerText =
-            "ระบบนี้ใช้ Deep Learning วิเคราะห์ภาพ X-ray โดยโมเดลจะตรวจจับความผิดปกติของปอด และใช้ Grad-CAM เพื่อแสดงตำแหน่งที่มีความเสี่ยง";
+            "ระบบนี้ใช้ Deep Learning วิเคราะห์ภาพ";
     }
 
     if (type === "guide") {
         title.innerText = "คู่มือการใช้งาน";
         content.innerText =
-            "1. อัปโหลดภาพ X-ray\n2. กดปุ่มวิเคราะห์\n3. ระบบจะแสดงผลพร้อม Heatmap และรายงาน";
+            "1. อัปโหลดภาพ X-ray\n2. กดปุ่ม";
     }
 
     if (type === "about") {
         title.innerText = "ผู้จัดทำ";
         content.innerText =
-            "พัฒนาโดย GenZBinary\nสาขาวิศวกรรมชีวการแพทย์\nโครงงาน AI วิเคราะห์ภาพทางการแพทย์";
+            "พัฒนาโดย ";
     }
 
     modal.style.display = "flex";
